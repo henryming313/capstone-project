@@ -1,0 +1,2075 @@
+﻿
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\config\OpenApiConfig.java =====
+
+package com.centria.cabbooking.config;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.License;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * OpenAPI/Swagger Configuration
+ * Fully compatible with Spring Boot 3.5.10
+ */
+@Configuration
+public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI cabBookingOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Cab Booking API")
+                        .description("RESTful API for Online Cab Booking Application")
+                        .version("v1.0.0")
+                        .contact(new Contact()
+                                .name("Centria Dev Team")
+                                .email("dev@centria.com"))
+                        .license(new License()
+                                .name("Apache 2.0")
+                                .url("https://www.apache.org/licenses/LICENSE-2.0")));
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\controller\CabController.java =====
+
+package com.centria.cabbooking.controller;
+
+import com.centria.cabbooking.entity.Cab;
+import com.centria.cabbooking.repository.CabRepository;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * REST Controller for cab management operations
+ * Handles HTTP requests for cab creation, query, update and filtering
+ * Core APIs: POST(create), GET(query), PATCH(update)
+ */
+@RestController
+@RequestMapping("/api/v1/cabs")
+@RequiredArgsConstructor
+public class CabController {
+
+    private final CabRepository cabRepository;
+
+    /**
+     * Create a new cab
+     * POST /api/v1/cabs
+     * @param cab Cab object with required fields (carNumber, carModel, carType, perKmRate)
+     * @return Created Cab object with HTTP 201 status
+     */
+    @PostMapping
+    public ResponseEntity<Cab> createCab(@Valid @RequestBody Cab cab) {
+        Cab createdCab = cabRepository.save(cab);
+        return new ResponseEntity<>(createdCab, HttpStatus.CREATED);
+    }
+
+    /**
+     * Get cab by ID
+     * GET /api/v1/cabs/{cabId}
+     * @param cabId Unique ID of the cab
+     * @return Cab object with HTTP 200 status
+     * @throws EntityNotFoundException if cab not found
+     */
+    @GetMapping("/{cabId}")
+    public ResponseEntity<Cab> getCabById(@PathVariable String cabId) {
+        Cab cab = cabRepository.findById(cabId)
+                .orElseThrow(() -> new EntityNotFoundException("Cab not found with ID: " + cabId));
+        return ResponseEntity.ok(cab);
+    }
+
+    /**
+     * Get all cabs (optional filtering by status and car type)
+     * GET /api/v1/cabs
+     * @param status Optional - cab status filter (AVAILABLE/BUSY/MAINTENANCE)
+     * @param carType Optional - car type filter (ECONOMY/PREMIUM/XL)
+     * @return List of Cab objects with HTTP 200 status
+     */
+    @GetMapping
+    public ResponseEntity<List<Cab>> getAllCabs(
+            @RequestParam(required = false) Cab.CabStatus status,
+            @RequestParam(required = false) Cab.CarType carType) {
+
+        List<Cab> cabs;
+        if (status != null && carType != null) {
+            cabs = cabRepository.findByStatusAndCarType(status, carType);
+        } else if (status != null) {
+            cabs = cabRepository.findAll().stream()
+                    .filter(c -> c.getStatus().equals(status))
+                    .toList();
+        } else if (carType != null) {
+            cabs = cabRepository.findAll().stream()
+                    .filter(c -> c.getCarType().equals(carType))
+                    .toList();
+        } else {
+            cabs = cabRepository.findAll();
+        }
+        return ResponseEntity.ok(cabs);
+    }
+
+    /**
+     * Update cab status (core update function)
+     * PATCH /api/v1/cabs/{cabId}/status
+     * @param cabId Unique ID of the cab
+     * @param status New status for the cab (AVAILABLE/BUSY/MAINTENANCE)
+     * @return Updated Cab object with HTTP 200 status
+     * @throws EntityNotFoundException if cab not found
+     */
+    @PatchMapping("/{cabId}/status")
+    public ResponseEntity<Cab> updateCabStatus(
+            @PathVariable String cabId,
+            @RequestParam Cab.CabStatus status) {
+
+        Cab cab = cabRepository.findById(cabId)
+                .orElseThrow(() -> new EntityNotFoundException("Cab not found with ID: " + cabId));
+        cab.setStatus(status);
+        Cab updatedCab = cabRepository.save(cab);
+        return ResponseEntity.ok(updatedCab);
+    }
+
+    /**
+     * Update cab basic information (carModel, perKmRate)
+     * PATCH /api/v1/cabs/{cabId}
+     * @param cabId Unique ID of the cab
+     * @param updateCab Cab object with fields to update (only non-null fields are updated)
+     * @return Updated Cab object with HTTP 200 status
+     * @throws EntityNotFoundException if cab not found
+     */
+    @PatchMapping("/{cabId}")
+    public ResponseEntity<Cab> updateCabInfo(
+            @PathVariable String cabId,
+            @RequestBody Cab updateCab) {
+
+        Cab cab = cabRepository.findById(cabId)
+                .orElseThrow(() -> new EntityNotFoundException("Cab not found with ID: " + cabId));
+
+        // Update only non-null fields (safe update pattern)
+        if (updateCab.getCarModel() != null) {
+            cab.setCarModel(updateCab.getCarModel());
+        }
+        if (updateCab.getPerKmRate() != null) {
+            cab.setPerKmRate(updateCab.getPerKmRate());
+        }
+        if (updateCab.getCarType() != null) {
+            cab.setCarType(updateCab.getCarType());
+        }
+
+        Cab updatedCab = cabRepository.save(cab);
+        return ResponseEntity.ok(updatedCab);
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\controller\CustomerController.java =====
+
+package com.centria.cabbooking.controller;
+
+import com.centria.cabbooking.entity.CustomerProfile;
+import com.centria.cabbooking.entity.User;
+import com.centria.cabbooking.repository.CustomerProfileRepository;
+import com.centria.cabbooking.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * REST Controller for customer profile management operations
+ * Handles HTTP requests for customer profile creation, query, update
+ * Core APIs: POST(create), GET(query), PATCH(update)
+ */
+@RestController
+@RequestMapping("/api/v1/customers")
+@RequiredArgsConstructor
+public class CustomerController {
+
+    private final CustomerProfileRepository customerProfileRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * Create a new customer profile (bind to existing CUSTOMER role user)
+     * POST /api/v1/customers
+     * @param customerProfile CustomerProfile object with bound user ID
+     * @return Created CustomerProfile object with HTTP 201 status
+     * @throws EntityNotFoundException if bound user not found
+     * @throws IllegalStateException if user role is not CUSTOMER
+     */
+    @PostMapping
+    public ResponseEntity<CustomerProfile> createCustomerProfile(@Valid @RequestBody CustomerProfile customerProfile) {
+        // Validate bound user exists and has correct role
+        User user = userRepository.findById(customerProfile.getUser().getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + customerProfile.getUser().getUserId()));
+
+        if (!user.getRole().equals(User.Role.CUSTOMER)) {
+            throw new IllegalStateException("User role must be CUSTOMER to create customer profile");
+        }
+
+        CustomerProfile createdProfile = customerProfileRepository.save(customerProfile);
+        return new ResponseEntity<>(createdProfile, HttpStatus.CREATED);
+    }
+
+    /**
+     * Get customer profile by ID
+     * GET /api/v1/customers/{customerId}
+     * @param customerId Unique ID of the customer profile
+     * @return CustomerProfile object with HTTP 200 status
+     * @throws EntityNotFoundException if profile not found
+     */
+    @GetMapping("/{customerId}")
+    public ResponseEntity<CustomerProfile> getCustomerProfileById(@PathVariable String customerId) {
+        CustomerProfile profile = customerProfileRepository.findById(customerId)
+                .orElseThrow(() -> new EntityNotFoundException("Customer profile not found with ID: " + customerId));
+        return ResponseEntity.ok(profile);
+    }
+
+    /**
+     * Get customer profile by associated user ID
+     * GET /api/v1/customers/user/{userId}
+     * @param userId ID of the bound user
+     * @return CustomerProfile object with HTTP 200 status
+     * @throws EntityNotFoundException if profile not found
+     */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<CustomerProfile> getCustomerProfileByUserId(@PathVariable String userId) {
+        CustomerProfile profile = customerProfileRepository.findByUserUserId(userId);
+        if (profile == null) {
+            throw new EntityNotFoundException("Customer profile not found for user ID: " + userId);
+        }
+        return ResponseEntity.ok(profile);
+    }
+
+    /**
+     * Get all customer profiles (simple list without filtering)
+     * GET /api/v1/customers
+     * @return List of all CustomerProfile objects with HTTP 200 status
+     */
+    @GetMapping
+    public ResponseEntity<List<CustomerProfile>> getAllCustomerProfiles() {
+        List<CustomerProfile> profiles = customerProfileRepository.findAll();
+        return ResponseEntity.ok(profiles);
+    }
+
+    /**
+     * Update customer profile information (address, rating, etc.)
+     * PATCH /api/v1/customers/{customerId}
+     * @param customerId Unique ID of the customer profile
+     * @param updateProfile CustomerProfile object with fields to update
+     * @return Updated CustomerProfile object with HTTP 200 status
+     * @throws EntityNotFoundException if profile not found
+     */
+    @PatchMapping("/{customerId}")
+    public ResponseEntity<CustomerProfile> updateCustomerProfile(
+            @PathVariable String customerId,
+            @RequestBody CustomerProfile updateProfile) {
+
+        CustomerProfile profile = customerProfileRepository.findById(customerId)
+                .orElseThrow(() -> new EntityNotFoundException("Customer profile not found with ID: " + customerId));
+
+        // Safe update - only modify non-null fields
+        if (updateProfile.getAddress() != null) {
+            profile.setAddress(updateProfile.getAddress());
+        }
+        if (updateProfile.getRating() != null) {
+            profile.setRating(updateProfile.getRating());
+        }
+        if (updateProfile.getPhoneNumber() != null) {
+            profile.setPhoneNumber(updateProfile.getPhoneNumber());
+        }
+
+        CustomerProfile updatedProfile = customerProfileRepository.save(profile);
+        return ResponseEntity.ok(updatedProfile);
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\controller\DriverController.java =====
+
+package com.centria.cabbooking.controller;
+
+import com.centria.cabbooking.entity.DriverProfile;
+import com.centria.cabbooking.entity.User;
+import com.centria.cabbooking.repository.DriverProfileRepository;
+import com.centria.cabbooking.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * REST Controller for driver profile management operations
+ * Handles HTTP requests for driver profile creation, query, update
+ * Core functions: create profile, driver online/offline, update info
+ */
+@RestController
+@RequestMapping("/api/v1/drivers")
+@RequiredArgsConstructor
+public class DriverController {
+
+    private final DriverProfileRepository driverProfileRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * Create a new driver profile (bind to existing DRIVER role user)
+     * POST /api/v1/drivers
+     * @param driverProfile DriverProfile object with bound user ID and license number
+     * @return Created DriverProfile object with HTTP 201 status
+     * @throws EntityNotFoundException if bound user not found
+     * @throws IllegalStateException if user role is not DRIVER or license number duplicate
+     */
+    @PostMapping
+    public ResponseEntity<DriverProfile> createDriverProfile(@Valid @RequestBody DriverProfile driverProfile) {
+        // Validate bound user exists and has correct role
+        User user = userRepository.findById(driverProfile.getUser().getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + driverProfile.getUser().getUserId()));
+
+        if (!user.getRole().equals(User.Role.DRIVER)) {
+            throw new IllegalStateException("User role must be DRIVER to create driver profile");
+        }
+
+        // Validate license number uniqueness
+        if (driverProfileRepository.findByLicenseNumber(driverProfile.getLicenseNumber()) != null) {
+            throw new IllegalStateException("License number already exists: " + driverProfile.getLicenseNumber());
+        }
+
+        DriverProfile createdProfile = driverProfileRepository.save(driverProfile);
+        return new ResponseEntity<>(createdProfile, HttpStatus.CREATED);
+    }
+
+    /**
+     * Get driver profile by ID
+     * GET /api/v1/drivers/{driverId}
+     * @param driverId Unique ID of the driver profile
+     * @return DriverProfile object with HTTP 200 status
+     * @throws EntityNotFoundException if profile not found
+     */
+    @GetMapping("/{driverId}")
+    public ResponseEntity<DriverProfile> getDriverProfileById(@PathVariable String driverId) {
+        DriverProfile profile = driverProfileRepository.findById(driverId)
+                .orElseThrow(() -> new EntityNotFoundException("Driver profile not found with ID: " + driverId));
+        return ResponseEntity.ok(profile);
+    }
+
+    /**
+     * Get driver profile by associated user ID
+     * GET /api/v1/drivers/user/{userId}
+     * @param userId ID of the bound user
+     * @return DriverProfile object with HTTP 200 status
+     * @throws EntityNotFoundException if profile not found
+     */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<DriverProfile> getDriverProfileByUserId(@PathVariable String userId) {
+        DriverProfile profile = driverProfileRepository.findByUserUserId(userId);
+        if (profile == null) {
+            throw new EntityNotFoundException("Driver profile not found for user ID: " + userId);
+        }
+        return ResponseEntity.ok(profile);
+    }
+
+    /**
+     * Get all driver profiles (filter by online status optional)
+     * GET /api/v1/drivers
+     * @param status Optional - driver status filter (ONLINE/OFFLINE/ON_TRIP)
+     * @return List of DriverProfile objects with HTTP 200 status
+     */
+    @GetMapping
+    public ResponseEntity<List<DriverProfile>> getAllDriverProfiles(
+            @RequestParam(required = false) DriverProfile.DriverStatus status) {
+
+        List<DriverProfile> profiles;
+        if (status != null) {
+            profiles = driverProfileRepository.findAll().stream()
+                    .filter(d -> d.getCurrentStatus().equals(status))
+                    .toList();
+        } else {
+            profiles = driverProfileRepository.findAll();
+        }
+        return ResponseEntity.ok(profiles);
+    }
+
+    /**
+     * Update driver status (core online/offline function)
+     * PATCH /api/v1/drivers/{driverId}/status
+     * @param driverId Unique ID of the driver profile
+     * @param status New status (ONLINE/OFFLINE/ON_TRIP)
+     * @param currentLocation Optional - driver's current location (for dispatch)
+     * @return Updated DriverProfile object with HTTP 200 status
+     * @throws EntityNotFoundException if profile not found
+     */
+    @PatchMapping("/{driverId}/status")
+    public ResponseEntity<DriverProfile> updateDriverStatus(
+            @PathVariable String driverId,
+            @RequestParam DriverProfile.DriverStatus status,
+            @RequestParam(required = false) String currentLocation) {
+
+        DriverProfile profile = driverProfileRepository.findById(driverId)
+                .orElseThrow(() -> new EntityNotFoundException("Driver profile not found with ID: " + driverId));
+
+        profile.setCurrentStatus(status);
+        // Update location if provided (for dispatch feature)
+        if (currentLocation != null) {
+            profile.setCurrentLocation(currentLocation);
+        }
+
+        DriverProfile updatedProfile = driverProfileRepository.save(profile);
+        return ResponseEntity.ok(updatedProfile);
+    }
+
+    /**
+     * Update driver profile information (license, rating, etc.)
+     * PATCH /api/v1/drivers/{driverId}
+     * @param driverId Unique ID of the driver profile
+     * @param updateProfile DriverProfile object with fields to update
+     * @return Updated DriverProfile object with HTTP 200 status
+     * @throws EntityNotFoundException if profile not found
+     */
+    @PatchMapping("/{driverId}")
+    public ResponseEntity<DriverProfile> updateDriverProfile(
+            @PathVariable String driverId,
+            @RequestBody DriverProfile updateProfile) {
+
+        DriverProfile profile = driverProfileRepository.findById(driverId)
+                .orElseThrow(() -> new EntityNotFoundException("Driver profile not found with ID: " + driverId));
+
+        // Safe update - only modify non-null fields
+        if (updateProfile.getLicenseNumber() != null) {
+            // Re-validate license number uniqueness if updated
+            if (!updateProfile.getLicenseNumber().equals(profile.getLicenseNumber())
+                    && driverProfileRepository.findByLicenseNumber(updateProfile.getLicenseNumber()) != null) {
+                throw new IllegalStateException("License number already exists: " + updateProfile.getLicenseNumber());
+            }
+            profile.setLicenseNumber(updateProfile.getLicenseNumber());
+        }
+        if (updateProfile.getRating() != null) {
+            profile.setRating(updateProfile.getRating());
+        }
+        if (updateProfile.getPhoneNumber() != null) {
+            profile.setPhoneNumber(updateProfile.getPhoneNumber());
+        }
+
+        DriverProfile updatedProfile = driverProfileRepository.save(profile);
+        return ResponseEntity.ok(updatedProfile);
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\controller\TripBookingController.java =====
+
+package com.centria.cabbooking.controller;
+
+import com.centria.cabbooking.entity.*;
+import com.centria.cabbooking.repository.*;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * REST Controller for trip booking management operations
+ * Handles full trip lifecycle: create booking, assign driver, start trip, complete trip, pay, review
+ * Core APIs: create, assign, start, complete, pay, review, query, update
+ */
+@RestController
+@RequestMapping("/api/v1/bookings")
+@RequiredArgsConstructor
+public class TripBookingController {
+
+    // Original repositories
+    private final TripBookingRepository tripBookingRepository;
+    private final DriverProfileRepository driverProfileRepository;
+    private final CustomerProfileRepository customerProfileRepository;
+    private final CabRepository cabRepository;
+
+    // Added repositories for payment and review
+    private final TripPaymentRepository tripPaymentRepository;
+    private final TripReviewRepository tripReviewRepository;
+
+    /**
+     * Create a new trip booking (customer initiates ride request)
+     * POST /api/v1/bookings
+     * @param tripBooking TripBooking object with customer ID, pickup/dropoff location, base fare
+     * @return Created TripBooking object with HTTP 201 status
+     * @throws EntityNotFoundException if customer not found
+     */
+    @PostMapping
+    public ResponseEntity<TripBooking> createBooking(@Valid @RequestBody TripBooking tripBooking) {
+        // Validate customer exists
+        CustomerProfile customer = customerProfileRepository.findById(tripBooking.getCustomer().getCustomerId())
+                .orElseThrow(() -> new EntityNotFoundException("Customer not found with ID: " + tripBooking.getCustomer().getCustomerId()));
+
+        tripBooking.setCustomer(customer);
+        tripBooking.setStatus(TripBooking.BookingStatus.PENDING);
+        tripBooking.setBookingTime(LocalDateTime.now());
+
+        TripBooking createdBooking = tripBookingRepository.save(tripBooking);
+        return new ResponseEntity<>(createdBooking, HttpStatus.CREATED);
+    }
+
+    /**
+     * Assign driver and cab to booking (dispatch system)
+     * PATCH /api/v1/bookings/{bookingId}/assign
+     * @param bookingId Unique ID of the booking
+     * @param driverId ID of the driver to assign
+     * @param cabId ID of the cab to assign
+     * @return Updated TripBooking object with HTTP 200 status
+     * @throws EntityNotFoundException if booking/driver/cab not found
+     * @throws IllegalStateException if driver is not online or cab is busy
+     */
+    @PatchMapping("/{bookingId}/assign")
+    public ResponseEntity<TripBooking> assignDriverToBooking(
+            @PathVariable String bookingId,
+            @RequestParam String driverId,
+            @RequestParam String cabId) {
+
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        // Validate booking status (only PENDING can be assigned)
+        if (!booking.getStatus().equals(TripBooking.BookingStatus.PENDING)) {
+            throw new IllegalStateException("Only PENDING bookings can be assigned to drivers");
+        }
+
+        // Validate driver is online
+        DriverProfile driver = driverProfileRepository.findById(driverId)
+                .orElseThrow(() -> new EntityNotFoundException("Driver not found with ID: " + driverId));
+        if (!driver.getCurrentStatus().equals(DriverProfile.DriverStatus.ONLINE)) {
+            throw new IllegalStateException("Driver is not available (not online)");
+        }
+
+        // Validate cab is available
+        Cab cab = cabRepository.findById(cabId)
+                .orElseThrow(() -> new EntityNotFoundException("Cab not found with ID: " + cabId));
+        if (!cab.getStatus().equals(Cab.CabStatus.AVAILABLE)) {
+            throw new IllegalStateException("Cab is not available (not in AVAILABLE status)");
+        }
+
+        // Update booking info
+        booking.setDriver(driver);
+        booking.setCab(cab);
+        booking.setStatus(TripBooking.BookingStatus.CONFIRMED);
+        booking.setAssignTime(LocalDateTime.now());
+
+        // Update driver and cab status
+        driver.setCurrentStatus(DriverProfile.DriverStatus.ON_TRIP);
+        driverProfileRepository.save(driver);
+
+        cab.setStatus(Cab.CabStatus.BUSY);
+        cabRepository.save(cab);
+
+        TripBooking updatedBooking = tripBookingRepository.save(booking);
+        return ResponseEntity.ok(updatedBooking);
+    }
+
+    /**
+     * Start trip (driver confirms trip initiation)
+     * PATCH /api/v1/bookings/{bookingId}/start
+     * @param bookingId Unique ID of the booking
+     * @return Updated TripBooking object with HTTP 200 status
+     * @throws EntityNotFoundException if booking not found
+     * @throws IllegalStateException if booking is not confirmed
+     */
+    @PatchMapping("/{bookingId}/start")
+    public ResponseEntity<TripBooking> startTrip(@PathVariable String bookingId) {
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        if (!booking.getStatus().equals(TripBooking.BookingStatus.CONFIRMED)) {
+            throw new IllegalStateException("Only CONFIRMED bookings can be started");
+        }
+
+        booking.setStatus(TripBooking.BookingStatus.IN_PROGRESS);
+        booking.setStartTime(LocalDateTime.now());
+
+        TripBooking updatedBooking = tripBookingRepository.save(booking);
+        return ResponseEntity.ok(updatedBooking);
+    }
+
+    /**
+     * Complete trip (driver confirms trip completion)
+     * PATCH /api/v1/bookings/{bookingId}/complete
+     * @param bookingId Unique ID of the booking
+     * @param distanceKm Actual travel distance in kilometers
+     * @return Updated TripBooking object with HTTP 200 status
+     * @throws EntityNotFoundException if booking not found
+     * @throws IllegalStateException if booking is not in progress
+     */
+    @PatchMapping("/{bookingId}/complete")
+    public ResponseEntity<TripBooking> completeTrip(
+            @PathVariable String bookingId,
+            @RequestParam Double distanceKm) {
+
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        if (!booking.getStatus().equals(TripBooking.BookingStatus.IN_PROGRESS)) {
+            throw new IllegalStateException("Only IN_PROGRESS bookings can be completed");
+        }
+
+        // Calculate total fare (base fare + distance * per km rate)
+        double totalFare = booking.getBaseFare() + (distanceKm * booking.getCab().getPerKmRate());
+
+        // Update booking info
+        booking.setStatus(TripBooking.BookingStatus.COMPLETED);
+        booking.setEndTime(LocalDateTime.now());
+        booking.setDistanceKm(distanceKm);
+        booking.setTotalFare(totalFare);
+
+        // Restore driver and cab status
+        DriverProfile driver = booking.getDriver();
+        driver.setCurrentStatus(DriverProfile.DriverStatus.ONLINE);
+        driverProfileRepository.save(driver);
+
+        Cab cab = booking.getCab();
+        cab.setStatus(Cab.CabStatus.AVAILABLE);
+        cabRepository.save(cab);
+
+        TripBooking updatedBooking = tripBookingRepository.save(booking);
+        return ResponseEntity.ok(updatedBooking);
+    }
+
+    /**
+     * Create trip payment record (customer pays for trip)
+     * POST /api/v1/bookings/{bookingId}/pay
+     * @param bookingId Unique ID of the booking
+     * @param tripPayment TripPayment object with payment method and amount
+     * @return Created TripPayment object with HTTP 201 status
+     * @throws EntityNotFoundException if booking not found
+     * @throws IllegalStateException if trip is not completed
+     */
+    @PostMapping("/{bookingId}/pay")
+    public ResponseEntity<TripPayment> createTripPayment(
+            @PathVariable String bookingId,
+            @Valid @RequestBody TripPayment tripPayment) {
+
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        if (!booking.getStatus().equals(TripBooking.BookingStatus.COMPLETED)) {
+            throw new IllegalStateException("Only COMPLETED trips can be paid");
+        }
+
+        // Validate payment amount matches total fare
+        if (Math.abs(tripPayment.getAmount() - booking.getTotalFare()) > 0.01) {
+            throw new IllegalStateException("Payment amount (" + tripPayment.getAmount() +
+                    ") does not match total fare (" + booking.getTotalFare() + ")");
+        }
+
+        tripPayment.setTripBooking(booking);
+        tripPayment.setPaymentTime(LocalDateTime.now());
+        tripPayment.setStatus(TripPayment.PaymentStatus.COMPLETED);
+
+        TripPayment createdPayment = tripPaymentRepository.save(tripPayment);
+        return new ResponseEntity<>(createdPayment, HttpStatus.CREATED);
+    }
+
+    /**
+     * Create trip review (customer rates driver/trip)
+     * POST /api/v1/bookings/{bookingId}/review
+     * @param bookingId Unique ID of the booking
+     * @param tripReview TripReview object with rating and comments
+     * @return Created TripReview object with HTTP 201 status
+     * @throws EntityNotFoundException if booking not found
+     * @throws IllegalStateException if trip is not completed or not paid
+     */
+    @PostMapping("/{bookingId}/review")
+    public ResponseEntity<TripReview> createTripReview(
+            @PathVariable String bookingId,
+            @Valid @RequestBody TripReview tripReview) {
+
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        // Validate trip is completed and paid
+        if (!booking.getStatus().equals(TripBooking.BookingStatus.COMPLETED)) {
+            throw new IllegalStateException("Only COMPLETED trips can be reviewed");
+        }
+
+        // Check if payment exists (simplified check)
+        List<TripPayment> payments = tripPaymentRepository.findByTripBookingBookingId(bookingId);
+        if (payments.isEmpty() || !payments.get(0).getStatus().equals(TripPayment.PaymentStatus.COMPLETED)) {
+            throw new IllegalStateException("Trip must be paid before review");
+        }
+
+        tripReview.setTripBooking(booking);
+        tripReview.setReviewTime(LocalDateTime.now());
+
+        // Update driver rating (simple average for demo)
+        updateDriverRating(tripReview);
+
+        TripReview createdReview = tripReviewRepository.save(tripReview);
+        return new ResponseEntity<>(createdReview, HttpStatus.CREATED);
+    }
+
+    /**
+     * Get booking by ID
+     * GET /api/v1/bookings/{bookingId}
+     * @param bookingId Unique ID of the booking
+     * @return TripBooking object with HTTP 200 status
+     * @throws EntityNotFoundException if booking not found
+     */
+    @GetMapping("/{bookingId}")
+    public ResponseEntity<TripBooking> getBookingById(@PathVariable String bookingId) {
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+        return ResponseEntity.ok(booking);
+    }
+
+    /**
+     * Get bookings by customer ID (filter by status optional)
+     * GET /api/v1/bookings/customer/{customerId}
+     * @param customerId ID of the customer
+     * @param status Optional - booking status filter
+     * @return List of TripBooking objects with HTTP 200 status
+     */
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<List<TripBooking>> getBookingsByCustomer(
+            @PathVariable String customerId,
+            @RequestParam(required = false) TripBooking.BookingStatus status) {
+
+        List<TripBooking> bookings;
+        if (status != null) {
+            bookings = tripBookingRepository.findByCustomerCustomerIdAndStatus(customerId, status);
+        } else {
+            bookings = tripBookingRepository.findAll().stream()
+                    .filter(b -> b.getCustomer().getCustomerId().equals(customerId))
+                    .toList();
+        }
+        return ResponseEntity.ok(bookings);
+    }
+
+    /**
+     * Get bookings by driver ID (filter by status optional)
+     * GET /api/v1/bookings/driver/{driverId}
+     * @param driverId ID of the driver
+     * @param status Optional - booking status filter
+     * @return List of TripBooking objects with HTTP 200 status
+     */
+    @GetMapping("/driver/{driverId}")
+    public ResponseEntity<List<TripBooking>> getBookingsByDriver(
+            @PathVariable String driverId,
+            @RequestParam(required = false) TripBooking.BookingStatus status) {
+
+        List<TripBooking> bookings;
+        if (status != null) {
+            bookings = tripBookingRepository.findByDriverDriverIdAndStatus(driverId, status);
+        } else {
+            bookings = tripBookingRepository.findAll().stream()
+                    .filter(b -> b.getDriver() != null && b.getDriver().getDriverId().equals(driverId))
+                    .toList();
+        }
+        return ResponseEntity.ok(bookings);
+    }
+
+    /**
+     * Cancel booking (only PENDING/CONFIRMED bookings)
+     * PATCH /api/v1/bookings/{bookingId}/cancel
+     * @param bookingId Unique ID of the booking
+     * @return Updated TripBooking object with HTTP 200 status
+     * @throws EntityNotFoundException if booking not found
+     * @throws IllegalStateException if booking is in progress/completed
+     */
+    @PatchMapping("/{bookingId}/cancel")
+    public ResponseEntity<TripBooking> cancelBooking(@PathVariable String bookingId) {
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        // Only allow cancel for PENDING or CONFIRMED bookings
+        if (booking.getStatus().equals(TripBooking.BookingStatus.IN_PROGRESS) ||
+                booking.getStatus().equals(TripBooking.BookingStatus.COMPLETED)) {
+            throw new IllegalStateException("Cannot cancel IN_PROGRESS or COMPLETED bookings");
+        }
+
+        booking.setStatus(TripBooking.BookingStatus.CANCELLED);
+        booking.setCancelTime(LocalDateTime.now());
+
+        // Restore driver/cab status if confirmed
+        if (booking.getStatus().equals(TripBooking.BookingStatus.CONFIRMED)) {
+            if (booking.getDriver() != null) {
+                DriverProfile driver = booking.getDriver();
+                driver.setCurrentStatus(DriverProfile.DriverStatus.ONLINE);
+                driverProfileRepository.save(driver);
+            }
+            if (booking.getCab() != null) {
+                Cab cab = booking.getCab();
+                cab.setStatus(Cab.CabStatus.AVAILABLE);
+                cabRepository.save(cab);
+            }
+        }
+
+        TripBooking updatedBooking = tripBookingRepository.save(booking);
+        return ResponseEntity.ok(updatedBooking);
+    }
+
+    /**
+     * Helper method to update driver rating (simple average calculation)
+     * @param review TripReview object with customer rating
+     */
+    private void updateDriverRating(TripReview review) {
+        DriverProfile driver = review.getDriver();
+        if (driver.getRating() == null) {
+            driver.setRating(review.getRating());
+        } else {
+            // Simple average: (current rating + new rating) / 2
+            driver.setRating((driver.getRating() + review.getRating()) / 2.0);
+        }
+        driverProfileRepository.save(driver);
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\controller\UserController.java =====
+
+package com.centria.cabbooking.controller;
+
+import com.centria.cabbooking.entity.User;
+import com.centria.cabbooking.service.UserService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * REST Controller for user management operations
+ * Handles HTTP requests related to users
+ */
+@RestController
+@RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserService userService;
+
+    /**
+     * Create a new user
+     * POST /api/v1/users
+     */
+    @PostMapping
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+        User createdUser = userService.createUser(user);
+        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+    }
+
+    /**
+     * Get user by ID
+     * GET /api/v1/users/{userId}
+     */
+    @GetMapping("/{userId}")
+    public ResponseEntity<User> getUserById(@PathVariable String userId) {
+        User user = userService.getUserById(userId);
+        return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Get user by email
+     * GET /api/v1/users/email/{email}
+     */
+    @GetMapping("/email/{email}")
+    public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
+        User user = userService.getUserByEmail(email);
+        return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Update user status
+     * PATCH /api/v1/users/{userId}/status
+     */
+    @PatchMapping("/{userId}/status")
+    public ResponseEntity<User> updateUserStatus(
+            @PathVariable String userId,
+            @RequestParam User.UserStatus status) {
+        User updatedUser = userService.updateUserStatus(userId, status);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    /**
+     * Get all users by role
+     * GET /api/v1/users/role/{role}
+     */
+    @GetMapping("/role/{role}")
+    public ResponseEntity<List<User>> getUsersByRole(@PathVariable User.Role role) {
+        List<User> users = userService.getUsersByRole(role);
+        return ResponseEntity.ok(users);
+    }
+
+    /**
+     * Delete user (soft delete)
+     * DELETE /api/v1/users/{userId}
+     */
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String userId) {
+        userService.deleteUser(userId);
+        return ResponseEntity.noContent().build();
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\entity\Cab.java =====
+
+package com.centria.cabbooking.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "cabs")
+@Data
+public class Cab {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String cabId;
+
+    @Column(unique = true, nullable = false)
+    private String carNumber;
+
+    private String carModel;
+
+    @Enumerated(EnumType.STRING)
+    private CarType carType;
+
+    private BigDecimal perKmRate;
+
+    @Enumerated(EnumType.STRING)
+    private CabStatus status = CabStatus.AVAILABLE;
+
+    public enum CarType {
+        ECONOMY, PREMIUM, LUXURY
+    }
+
+    public enum CabStatus {
+        AVAILABLE, ON_TRIP, MAINTENANCE
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\entity\CurrentUserSession.java =====
+
+package com.centria.cabbooking.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+/**
+ * Tracks active user sessions for authentication
+ */
+@Entity
+@Table(name = "current_user_session")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CurrentUserSession {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	@Column(name = "session_id")
+	private String sessionId;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "user_id", nullable = false)
+	private User user;
+
+	@Column(name = "refresh_token", unique = true, nullable = false)
+	private String refreshToken;
+
+	@Column(name = "expires_at", nullable = false)
+	private LocalDateTime expiresAt;
+
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt = LocalDateTime.now();
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\entity\CustomerProfile.java =====
+
+package com.centria.cabbooking.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+@Entity
+@Table(name = "customer_profiles")
+@Data
+public class CustomerProfile {
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private String customerId;
+
+	@OneToOne
+	@JoinColumn(name = "user_id", nullable = false)
+	private User user;
+
+	private String address;
+	private Double rating = 0.0;
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\entity\DriverCabAssignment.java =====
+
+package com.centria.cabbooking.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+
+/**
+ * Represents the assignment relationship between driver and cab
+ * Tracks current and historical assignments
+ */
+@Entity
+@Table(name = "driver_cab_assignment")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class DriverCabAssignment {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	@Column(name = "assignment_id")
+	private String assignmentId;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "driver_id", nullable = false)
+	private DriverProfile driver;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "cab_id", nullable = false)
+	private Cab cab;
+
+	@CreationTimestamp
+	@Column(name = "assigned_at", nullable = false)
+	private LocalDateTime assignedAt;
+
+	@Column(name = "released_at")
+	private LocalDateTime releasedAt;
+
+	@Column(name = "is_active", nullable = false)
+	private Boolean isActive = true;
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\entity\DriverProfile.java =====
+
+package com.centria.cabbooking.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+@Entity
+@Table(name = "driver_profiles")
+@Data
+public class DriverProfile {
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private String driverProfileId;
+
+	@OneToOne
+	@JoinColumn(name = "user_id", nullable = false)
+	private User user;
+
+	@Column(unique = true, nullable = false)
+	private String licenseNumber;
+
+	private String currentLocation;
+
+	private Double rating = 0.0;
+
+	@Enumerated(EnumType.STRING)
+	private DriverStatus currentStatus = DriverStatus.OFFLINE;
+
+	public enum DriverStatus {
+		ONLINE, OFFLINE, ON_TRIP
+	}
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\entity\TripBooking.java =====
+
+package com.centria.cabbooking.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "trip_bookings")
+@Data
+public class TripBooking {
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private String bookingId;
+
+	@ManyToOne
+	@JoinColumn(name = "customer_id", nullable = false)
+	private CustomerProfile customer;
+
+	@ManyToOne
+	@JoinColumn(name = "driver_id")
+	private DriverProfile driver;
+
+	@ManyToOne
+	@JoinColumn(name = "cab_id")
+	private Cab cab;
+
+	@Column(nullable = false)
+	private String pickupLocation;
+
+	@Column(nullable = false)
+	private String dropoffLocation;
+
+	private Double distanceKm;
+
+	@Column(nullable = false)
+	private BigDecimal baseFare;
+
+	private BigDecimal surgeMultiplier = BigDecimal.ONE;
+
+	private BigDecimal totalFare;
+
+	@Enumerated(EnumType.STRING)
+	private BookingStatus status;
+
+	private LocalDateTime createdAt = LocalDateTime.now();
+	private LocalDateTime startedAt;
+	private LocalDateTime completedAt;
+
+	public enum BookingStatus {
+		PENDING, CONFIRMED, ON_GOING, COMPLETED, CANCELLED
+	}
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\entity\TripPayment.java =====
+
+package com.centria.cabbooking.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * Entity class representing trip payment records
+ * Maps to database table "trip_payments"
+ */
+@Entity
+@Table(name = "trip_payments")
+@Data
+public class TripPayment {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String paymentId; // Unique identifier for payment record
+
+    @OneToOne
+    @JoinColumn(name = "booking_id", nullable = false)
+    private TripBooking tripBooking; // Associated trip booking
+
+    @Column(nullable = false)
+    private BigDecimal amount; // Payment amount
+
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod; // Payment method type
+
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus status = PaymentStatus.PENDING; // Payment status (default: PENDING)
+
+    private LocalDateTime paymentTime; // Time when payment was processed
+    private String transactionId; // External transaction ID from payment gateway
+
+    /**
+     * Enum representing available payment methods
+     */
+    public enum PaymentMethod {
+        CREDIT_CARD, DEBIT_CARD, UPI, CASH, WALLET
+    }
+
+    /**
+     * Enum representing payment statuses
+     */
+    public enum PaymentStatus {
+        PENDING, COMPLETED, FAILED, REFUNDED
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\entity\TripReview.java =====
+
+package com.centria.cabbooking.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "trip_reviews")
+@Data
+public class TripReview {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String reviewId;
+
+    @OneToOne
+    @JoinColumn(name = "booking_id", nullable = false)
+    private TripBooking tripBooking;
+
+    @ManyToOne
+    @JoinColumn(name = "customer_id", nullable = false)
+    private CustomerProfile customer;
+
+    @ManyToOne
+    @JoinColumn(name = "driver_id", nullable = false)
+    private DriverProfile driver;
+
+    private Integer rating;
+    private String comments;
+    private LocalDateTime reviewedAt = LocalDateTime.now();
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\entity\User.java =====
+
+package com.centria.cabbooking.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+@Entity
+@Table(name = "users")
+@Data
+public class User {
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private String userId;
+
+	@Column(unique = true, nullable = false)
+	private String email;
+
+	@Column(nullable = false)
+	private String password;
+
+	@Column(unique = true, nullable = false)
+	private String mobileNumber;
+
+	@Enumerated(EnumType.STRING)
+	private Role role;
+
+	@Enumerated(EnumType.STRING)
+	private UserStatus status = UserStatus.ACTIVE;
+
+	public enum Role {
+		ADMIN, DRIVER, CUSTOMER
+	}
+
+	public enum UserStatus {
+		ACTIVE, INACTIVE, SUSPENDED
+	}
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\exception\GlobalExceptionHandler.java =====
+
+package com.centria.cabbooking.exception;
+
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Global exception handler for the cab booking application
+ * Centralizes exception handling for all controllers
+ */
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    /**
+     * Handles EntityNotFoundException (resource not found)
+     */
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(EntityNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Handles validation errors from request parameters
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ValidationErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        ValidationErrorResponse errorResponse = new ValidationErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Validation failed",
+                LocalDateTime.now(),
+                errors
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handles all other uncaught exceptions
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "An unexpected error occurred: " + ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // Error response DTO
+    public static class ErrorResponse {
+        private int status;
+        private String message;
+        private LocalDateTime timestamp;
+
+        public ErrorResponse(int status, String message, LocalDateTime timestamp) {
+            this.status = status;
+            this.message = message;
+            this.timestamp = timestamp;
+        }
+
+        // Getters and Setters
+        public int getStatus() { return status; }
+        public void setStatus(int status) { this.status = status; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        public LocalDateTime getTimestamp() { return timestamp; }
+        public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+    }
+
+    // Validation error response DTO
+    public static class ValidationErrorResponse extends ErrorResponse {
+        private Map<String, String> errors;
+
+        public ValidationErrorResponse(int status, String message, LocalDateTime timestamp, Map<String, String> errors) {
+            super(status, message, timestamp);
+            this.errors = errors;
+        }
+
+        public Map<String, String> getErrors() { return errors; }
+        public void setErrors(Map<String, String> errors) { this.errors = errors; }
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\exception\ResourceConflictException.java =====
+
+package com.centria.cabbooking.exception;
+
+/**
+ * Custom exception for resource conflict scenarios (e.g., duplicate email/mobile)
+ */
+public class ResourceConflictException extends RuntimeException {
+    public ResourceConflictException(String message) {
+        super(message);
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\repository\CabRepository.java =====
+
+package com.centria.cabbooking.repository;
+
+import com.centria.cabbooking.entity.Cab;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+/**
+ * Repository for Cab entity operations
+ */
+@Repository
+public interface CabRepository extends JpaRepository<Cab, String> {
+    // Find cab by registration number
+    Cab findByCarNumber(String carNumber);
+
+    // Find available cabs by status and type
+    List<Cab> findByStatusAndCarType(Cab.CabStatus status, Cab.CarType carType);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\repository\CurrentUserSessionRepository.java =====
+
+package com.centria.cabbooking.repository;
+
+import com.centria.cabbooking.entity.CurrentUserSession;
+import com.centria.cabbooking.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+/**
+ * Repository for CurrentUserSession entity operations
+ */
+@Repository
+public interface CurrentUserSessionRepository extends JpaRepository<CurrentUserSession, String> {
+    // Find session by user and active status (expiresAt > now)
+    Optional<CurrentUserSession> findByUserAndExpiresAtAfter(User user, java.time.LocalDateTime now);
+
+    // Find session by refresh token
+    Optional<CurrentUserSession> findByRefreshToken(String refreshToken);
+
+    // Delete all expired sessions
+    void deleteByExpiresAtBefore(java.time.LocalDateTime now);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\repository\CustomerProfileRepository.java =====
+
+package com.centria.cabbooking.repository;
+
+import com.centria.cabbooking.entity.CustomerProfile;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Repository interface for CustomerProfile entity
+ * Provides database access methods for customer profile operations
+ */
+@Repository
+public interface CustomerProfileRepository extends JpaRepository<CustomerProfile, String> {
+
+    /**
+     * Find customer profile by associated user's userId
+     * JPA naming rule: findBy[EntityProperty][SubProperty]
+     * - CustomerProfile has "user" property (type: User)
+     * - User has "userId" property (primary key)
+     * So method name must be findByUserUserId instead of findByUserId
+     *
+     * @param userId the unique identifier of the associated user
+     * @return CustomerProfile object matching the userId
+     */
+    CustomerProfile findByUserUserId(String userId);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\repository\DriverCabAssignmentRepository.java =====
+
+package com.centria.cabbooking.repository;
+
+import com.centria.cabbooking.entity.DriverCabAssignment;
+import com.centria.cabbooking.entity.DriverProfile;
+import com.centria.cabbooking.entity.Cab;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+/**
+ * Repository for DriverCabAssignment entity operations
+ */
+@Repository
+public interface DriverCabAssignmentRepository extends JpaRepository<DriverCabAssignment, String> {
+    // Find active assignment for a driver
+    Optional<DriverCabAssignment> findByDriverAndIsActive(DriverProfile driver, Boolean isActive);
+
+    // Find active assignment for a cab
+    Optional<DriverCabAssignment> findByCabAndIsActive(Cab cab, Boolean isActive);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\repository\DriverProfileRepository.java =====
+
+package com.centria.cabbooking.repository;
+
+import com.centria.cabbooking.entity.DriverProfile;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Repository interface for DriverProfile entity
+ * Provides database access methods for driver profile operations
+ */
+@Repository
+public interface DriverProfileRepository extends JpaRepository<DriverProfile, String> {
+
+    /**
+     * Find driver profile by associated user's userId
+     * JPA naming rule: findBy[EntityProperty][SubProperty]
+     * - DriverProfile has "user" property (type: User)
+     * - User has "userId" property (primary key)
+     * So method name must be findByUserUserId instead of findByUserId
+     *
+     * @param userId the unique identifier of the associated user
+     * @return DriverProfile object matching the userId
+     */
+    DriverProfile findByUserUserId(String userId);
+
+    /**
+     * Find driver profile by license number (unique constraint)
+     *
+     * @param licenseNumber the unique driver license number
+     * @return DriverProfile object matching the license number
+     */
+    DriverProfile findByLicenseNumber(String licenseNumber);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\repository\TripBookingRepository.java =====
+
+package com.centria.cabbooking.repository;
+
+import com.centria.cabbooking.entity.TripBooking;
+import com.centria.cabbooking.entity.CustomerProfile;
+import com.centria.cabbooking.entity.DriverProfile;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Repository for TripBooking entity operations
+ */
+@Repository
+public interface TripBookingRepository extends JpaRepository<TripBooking, String> {
+    // Find trips by customer and status
+    List<TripBooking> findByCustomerAndStatus(CustomerProfile customer, TripBooking.BookingStatus status);
+
+    // Find trips by driver and date range
+    List<TripBooking> findByDriverAndCreatedAtBetween(DriverProfile driver,
+                                                      LocalDateTime startDate,
+                                                      LocalDateTime endDate);
+
+    // Find active trips for a driver
+    List<TripBooking> findByDriverAndStatusIn(DriverProfile driver, List<TripBooking.BookingStatus> statuses);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\repository\TripPaymentRepository.java =====
+
+package com.centria.cabbooking.repository;
+
+import com.centria.cabbooking.entity.TripPayment;
+import com.centria.cabbooking.entity.TripBooking;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+/**
+ * Repository for TripPayment entity operations
+ */
+@Repository
+public interface TripPaymentRepository extends JpaRepository<TripPayment, String> {
+    // Find payment by booking
+    Optional<TripPayment> findByTripBooking(TripBooking tripBooking);
+
+    // Find payments by transaction ID
+    Optional<TripPayment> findByTransactionId(String transactionId);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\repository\TripReviewRepository.java =====
+
+package com.centria.cabbooking.repository;
+
+import com.centria.cabbooking.entity.TripReview;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface TripReviewRepository extends JpaRepository<TripReview, String> {
+    List<TripReview> findByTripBooking_BookingId(String bookingId);
+    List<TripReview> findByDriver_User_UserId(String driverId);
+    List<TripReview> findByCustomer_User_UserId(String customerId);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\repository\UserRepository.java =====
+
+package com.centria.cabbooking.repository;
+
+import com.centria.cabbooking.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Repository for User entity operations
+ */
+@Repository
+public interface UserRepository extends JpaRepository<User, String> {
+    Optional<User> findByEmail(String email);
+    Optional<User> findByMobileNumber(String mobileNumber);
+    Optional<User> findByUserIdAndRole(String userId, User.Role role);
+    boolean existsByEmail(String email);
+    boolean existsByMobileNumber(String mobileNumber);
+
+    List<User> findByRole(User.Role role);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\service\TripBookingService.java =====
+
+package com.centria.cabbooking.service;
+
+import com.centria.cabbooking.entity.TripBooking;
+import com.centria.cabbooking.entity.CustomerProfile;
+import com.centria.cabbooking.entity.DriverProfile;
+import jakarta.persistence.EntityNotFoundException;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Service interface for trip booking operations
+ */
+public interface TripBookingService {
+    /**
+     * Create a new trip booking request
+     * @param tripBooking Trip booking details
+     * @return Created trip booking
+     */
+    TripBooking createBooking(TripBooking tripBooking);
+
+    /**
+     * Assign driver and cab to a pending booking
+     * @param bookingId Booking ID
+     * @param driverId Driver ID
+     * @param cabId Cab ID
+     * @return Updated booking with assigned driver/cab
+     * @throws EntityNotFoundException if booking/driver/cab not found
+     */
+    TripBooking assignDriverAndCab(String bookingId, String driverId, String cabId);
+
+    /**
+     * Start an assigned trip
+     * @param bookingId Booking ID
+     * @return Updated booking with status ON_GOING
+     * @throws EntityNotFoundException if booking not found
+     */
+    TripBooking startTrip(String bookingId);
+
+    /**
+     * Complete a trip and calculate final fare
+     * @param bookingId Booking ID
+     * @param distanceKm Actual distance traveled
+     * @return Updated booking with status COMPLETED and final fare
+     * @throws EntityNotFoundException if booking not found
+     */
+    TripBooking completeTrip(String bookingId, Double distanceKm);
+
+    /**
+     * Cancel a pending/confirmed booking
+     * @param bookingId Booking ID
+     * @return Updated booking with status CANCELLED
+     * @throws EntityNotFoundException if booking not found
+     */
+    TripBooking cancelBooking(String bookingId);
+
+    /**
+     * Calculate trip fare based on distance, base fare and surge multiplier
+     * @param baseFare Base fare
+     * @param distanceKm Travel distance
+     * @param surgeMultiplier Surge pricing multiplier
+     * @return Calculated total fare
+     */
+    BigDecimal calculateFare(BigDecimal baseFare, Double distanceKm, BigDecimal surgeMultiplier);
+
+    /**
+     * Get all bookings for a customer
+     * @param customerId Customer ID
+     * @return List of customer's bookings
+     */
+    List<TripBooking> getCustomerBookings(String customerId);
+
+    /**
+     * Get all bookings for a driver in a date range
+     * @param driverId Driver ID
+     * @param startDate Start date
+     * @param endDate End date
+     * @return List of driver's bookings in the date range
+     */
+    List<TripBooking> getDriverBookings(String driverId, LocalDateTime startDate, LocalDateTime endDate);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\service\TripBookingServiceImpl.java =====
+
+package com.centria.cabbooking.service;
+
+import com.centria.cabbooking.entity.Cab;
+import com.centria.cabbooking.entity.CustomerProfile;
+import com.centria.cabbooking.entity.DriverProfile;
+import com.centria.cabbooking.entity.TripBooking;
+import com.centria.cabbooking.repository.CabRepository;
+import com.centria.cabbooking.repository.CustomerProfileRepository;
+import com.centria.cabbooking.repository.DriverProfileRepository;
+import com.centria.cabbooking.repository.TripBookingRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Implementation of TripBookingService interface
+ * Handles core trip booking business logic
+ */
+@Service
+@RequiredArgsConstructor
+public class TripBookingServiceImpl implements TripBookingService {
+
+    private final TripBookingRepository tripBookingRepository;
+    private final DriverProfileRepository driverProfileRepository;
+    private final CustomerProfileRepository customerProfileRepository;
+    private final CabRepository cabRepository;
+
+    @Override
+    @Transactional
+    public TripBooking createBooking(TripBooking tripBooking) {
+        CustomerProfile customer = customerProfileRepository.findById(tripBooking.getCustomer().getCustomerId())
+                .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
+        tripBooking.setCustomer(customer);
+
+        tripBooking.setStatus(TripBooking.BookingStatus.PENDING);
+        tripBooking.setTotalFare(calculateFare(tripBooking.getBaseFare(), 0.0, tripBooking.getSurgeMultiplier()));
+
+        return tripBookingRepository.save(tripBooking);
+    }
+
+    @Override
+    @Transactional
+    public TripBooking assignDriverAndCab(String bookingId, String driverId, String cabId) {
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        if (booking.getStatus() != TripBooking.BookingStatus.PENDING) {
+            throw new IllegalStateException("Cannot assign driver to non-pending booking");
+        }
+
+        DriverProfile driver = driverProfileRepository.findById(driverId)
+                .orElseThrow(() -> new EntityNotFoundException("Driver not found with ID: " + driverId));
+
+        Cab cab = cabRepository.findById(cabId)
+                .orElseThrow(() -> new EntityNotFoundException("Cab not found with ID: " + cabId));
+
+        booking.setDriver(driver);
+        booking.setCab(cab);
+        booking.setStatus(TripBooking.BookingStatus.CONFIRMED);
+
+        driver.setCurrentStatus(DriverProfile.DriverStatus.ON_TRIP);
+        cab.setStatus(Cab.CabStatus.ON_TRIP);
+
+        driverProfileRepository.save(driver);
+        cabRepository.save(cab);
+
+        return tripBookingRepository.save(booking);
+    }
+
+    @Override
+    @Transactional
+    public TripBooking startTrip(String bookingId) {
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        if (booking.getStatus() != TripBooking.BookingStatus.CONFIRMED) {
+            throw new IllegalStateException("Cannot start non-confirmed booking");
+        }
+
+        booking.setStatus(TripBooking.BookingStatus.ON_GOING);
+        booking.setStartedAt(LocalDateTime.now());
+
+        return tripBookingRepository.save(booking);
+    }
+
+    @Override
+    @Transactional
+    public TripBooking completeTrip(String bookingId, Double distanceKm) {
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        if (booking.getStatus() != TripBooking.BookingStatus.ON_GOING) {
+            throw new IllegalStateException("Cannot complete non-on-going booking");
+        }
+
+        booking.setDistanceKm(distanceKm);
+        booking.setTotalFare(calculateFare(booking.getBaseFare(), distanceKm, booking.getSurgeMultiplier(), booking.getCab()));
+        booking.setStatus(TripBooking.BookingStatus.COMPLETED);
+        booking.setCompletedAt(LocalDateTime.now());
+
+        if (booking.getDriver() != null) {
+            DriverProfile driver = booking.getDriver();
+            driver.setCurrentStatus(DriverProfile.DriverStatus.ONLINE);
+            driverProfileRepository.save(driver);
+        }
+
+        if (booking.getCab() != null) {
+            Cab cab = booking.getCab();
+            cab.setStatus(Cab.CabStatus.AVAILABLE);
+            cabRepository.save(cab);
+        }
+
+        return tripBookingRepository.save(booking);
+    }
+
+    @Override
+    @Transactional
+    public TripBooking cancelBooking(String bookingId) {
+        TripBooking booking = tripBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+
+        if (booking.getStatus() == TripBooking.BookingStatus.ON_GOING ||
+                booking.getStatus() == TripBooking.BookingStatus.COMPLETED) {
+            throw new IllegalStateException("Cannot cancel on-going/completed booking");
+        }
+
+        TripBooking.BookingStatus originalStatus = booking.getStatus();
+        booking.setStatus(TripBooking.BookingStatus.CANCELLED);
+
+        if (originalStatus == TripBooking.BookingStatus.CONFIRMED && booking.getDriver() != null) {
+            DriverProfile driver = booking.getDriver();
+            driver.setCurrentStatus(DriverProfile.DriverStatus.ONLINE);
+            driverProfileRepository.save(driver);
+
+            Cab cab = booking.getCab();
+            cab.setStatus(Cab.CabStatus.AVAILABLE);
+            cabRepository.save(cab);
+        }
+
+        return tripBookingRepository.save(booking);
+    }
+
+    @Override
+    public BigDecimal calculateFare(BigDecimal baseFare, Double distanceKm, BigDecimal surgeMultiplier) {
+        return calculateFare(baseFare, distanceKm, surgeMultiplier, null);
+    }
+
+    private BigDecimal calculateFare(BigDecimal baseFare, Double distanceKm, BigDecimal surgeMultiplier, Cab cab) {
+        if (distanceKm == null || distanceKm <= 0) {
+            return baseFare.multiply(surgeMultiplier).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal perKmRate = (cab != null && cab.getPerKmRate() != null) ? cab.getPerKmRate() : BigDecimal.valueOf(10.0);
+        BigDecimal distanceFare = perKmRate.multiply(BigDecimal.valueOf(distanceKm));
+        BigDecimal totalFare = (baseFare.add(distanceFare)).multiply(surgeMultiplier);
+
+        return totalFare.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TripBooking> getCustomerBookings(String customerId) {
+        CustomerProfile customer = customerProfileRepository.findById(customerId)
+                .orElseThrow(() -> new EntityNotFoundException("Customer not found with ID: " + customerId));
+
+        return tripBookingRepository.findByCustomerAndStatus(customer, TripBooking.BookingStatus.COMPLETED);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TripBooking> getDriverBookings(String driverId, LocalDateTime startDate, LocalDateTime endDate) {
+        DriverProfile driver = driverProfileRepository.findById(driverId)
+                .orElseThrow(() -> new EntityNotFoundException("Driver not found with ID: " + driverId));
+
+        return tripBookingRepository.findByDriverAndCreatedAtBetween(driver, startDate, endDate);
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\service\UserService.java =====
+
+package com.centria.cabbooking.service;
+
+import com.centria.cabbooking.entity.User;
+import com.centria.cabbooking.exception.ResourceConflictException;
+import jakarta.persistence.EntityNotFoundException;
+
+import java.util.List;
+
+/**
+ * Service interface for user management operations
+ */
+public interface UserService {
+    /**
+     * Create a new user in the system
+     * @param user User entity to create
+     * @return Created user with generated ID
+     * @throws ResourceConflictException if email/mobile already exists
+     */
+    User createUser(User user);
+
+    /**
+     * Get user by ID
+     * @param userId User ID
+     * @return User entity
+     * @throws EntityNotFoundException if user not found
+     */
+    User getUserById(String userId);
+
+    /**
+     * Get user by email
+     * @param email User email
+     * @return User entity
+     * @throws EntityNotFoundException if user not found
+     */
+    User getUserByEmail(String email);
+
+    /**
+     * Update user status (ACTIVE/INACTIVE/SUSPENDED)
+     * @param userId User ID
+     * @param status New status
+     * @return Updated user
+     * @throws EntityNotFoundException if user not found
+     */
+    User updateUserStatus(String userId, User.UserStatus status);
+
+    /**
+     * Get all users by role
+     * @param role User role (ADMIN/CUSTOMER/DRIVER)
+     * @return List of users with specified role
+     */
+    List<User> getUsersByRole(User.Role role);
+
+    /**
+     * Delete user (soft delete - update status to INACTIVE)
+     * @param userId User ID
+     * @throws EntityNotFoundException if user not found
+     */
+    void deleteUser(String userId);
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\service\UserServiceImpl.java =====
+
+package com.centria.cabbooking.service;
+
+import com.centria.cabbooking.entity.User;
+import com.centria.cabbooking.exception.ResourceConflictException;
+import com.centria.cabbooking.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+/**
+ * Implementation of UserService interface
+ * Handles core user management business logic
+ */
+@Service
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+
+    private final UserRepository userRepository;
+
+    @Override
+    @Transactional
+    public User createUser(User user) {
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new ResourceConflictException("Email already exists: " + user.getEmail());
+        }
+
+        if (userRepository.existsByMobileNumber(user.getMobileNumber())) {
+            throw new ResourceConflictException("Mobile number already exists: " + user.getMobileNumber());
+        }
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User getUserById(String userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
+    }
+
+    @Override
+    @Transactional
+    public User updateUserStatus(String userId, User.UserStatus status) {
+        User user = getUserById(userId);
+        user.setStatus(status);
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> getUsersByRole(User.Role role) {
+        return userRepository.findByRole(role);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(String userId) {
+        User user = getUserById(userId);
+        user.setStatus(User.UserStatus.INACTIVE);
+        userRepository.save(user);
+    }
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\main\java\com\centria\cabbooking\CabBookingApplication.java =====
+
+package com.centria.cabbooking;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class CabBookingApplication {
+	public static void main(String[] args) {
+		SpringApplication.run(CabBookingApplication.class, args);
+	}
+}
+
+===== FILE: D:\2wsl\cabbooking-centria2026\src\test\java\com\centria\cabbooking\CabbookingApplicationTests.java =====
+
+package com.centria.cabbooking;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class CabbookingApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}

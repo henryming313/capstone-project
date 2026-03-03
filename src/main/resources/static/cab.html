@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cab Management - Cab Booking System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- English comment: Cab management page - create new cab -->
+</head>
+<body>
+<div class="container">
+    <h1>Cab Management</h1>
+    <a href="index.html" class="btn btn-secondary">Back to Main Menu</a>
+
+    <!-- Create Cab Section -->
+    <div class="section">
+        <h2>Create New Cab</h2>
+        <div class="form-group">
+            <label for="carNumber">Car Number</label>
+            <input type="text" id="carNumber" required placeholder="ABC123">
+        </div>
+        <div class="form-group">
+            <label for="carModel">Car Model</label>
+            <input type="text" id="carModel" required placeholder="Toyota Camry">
+        </div>
+        <div class="form-group">
+            <label for="carType">Car Type</label>
+            <select id="carType" required>
+                <option value="ECONOMY">Economy</option>
+                <option value="PREMIUM">Premium</option>
+                <option value="XL">XL</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="perKmRate">Per KM Rate ($)</label>
+            <input type="number" id="perKmRate" min="0" step="0.01" value="1.50" required>
+        </div>
+        <div class="form-group">
+            <label for="cabStatus">Status</label>
+            <select id="cabStatus" required>
+                <option value="AVAILABLE">Available</option>
+                <option value="ON_TRIP">On Trip</option>
+                <option value="MAINTENANCE">Maintenance</option>
+            </select>
+        </div>
+        <button class="btn" onclick="createCab()">Create Cab</button>
+        <div id="cabResponse" class="response"></div>
+    </div>
+</div>
+
+<script src="js/axios.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/cab.js"></script>
+</body>
+</html>
