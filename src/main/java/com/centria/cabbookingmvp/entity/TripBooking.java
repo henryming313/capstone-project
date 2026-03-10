@@ -6,67 +6,81 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+// Specify the database table name as users
 @Entity
+
+// Specify the database table name as trip_bookings
+// Also create a database index to improve query speed
 @Table(name = "trip_bookings", indexes = {
-        @Index(name = "idx_trip_rider", columnList = "rider_id"),
-        @Index(name = "idx_trip_driver", columnList = "driver_id"),
-        @Index(name = "idx_trip_status", columnList = "status")
+        @Index(name = "idx_trip_rider", columnList = "rider_id"),// rider
+        @Index(name = "idx_trip_driver", columnList = "driver_id"),// driver
+        @Index(name = "idx_trip_status", columnList = "status")// status
 })
 public class TripBooking {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id // id is the database primary key
+    @GeneratedValue(strategy = GenerationType.IDENTITY)// id is the database primary key
     private Long id;
 
-    // 乘客（必填）
+    // rider
     @NotNull
+    // A user can have many orders
     @ManyToOne(optional = false)
+    // This field corresponds to the database column rider_id
     @JoinColumn(name = "rider_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_trip_rider"))
     private User rider;
 
-    // 司机（可为空：未派单）
+    // Driver
     @ManyToOne
+    // This field corresponds to the database column driver_id
     @JoinColumn(name = "driver_id",
             foreignKey = @ForeignKey(name = "fk_trip_driver"))
     private User driver;
 
-    // 车辆（可为空：未派车）
+    // car
     @ManyToOne
+    // This field corresponds to the database column cab_id
     @JoinColumn(name = "cab_id",
             foreignKey = @ForeignKey(name = "fk_trip_cab"))
     private Cab cab;
 
-    // 简化：先用文本地址（后续你再升级成 lat/lng）
+    // Pick-up location
+    @NotNull
     @Column(nullable = false, length = 255)
     private String pickupLocation;
 
+    // Drop-off location
+    @NotNull
     @Column(nullable = false, length = 255)
     private String dropoffLocation;
-
+    // Order status
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private TripStatus status = TripStatus.REQUESTED;
+    private TripStatus status = TripStatus.PENDING;
 
-    // 费用：MVP 先保留一个 totalFare
+    // total price
     @Column(precision = 12, scale = 2)
     private BigDecimal totalFare;
-
+    // Order creation time
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
-
+    // Order update time
     @Column(nullable = false)
     private Instant updatedAt;
 
     public TripBooking() {}
 
+    // Execute automatically before data is saved to the database
+
+    // Automatically set creation and update times
     @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;
     }
-
+    // Automatically update updatedAt
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = Instant.now();

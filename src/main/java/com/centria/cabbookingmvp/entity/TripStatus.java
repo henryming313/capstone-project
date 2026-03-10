@@ -1,5 +1,9 @@
 package com.centria.cabbookingmvp.entity;
 
 public enum TripStatus {
-    REQUESTED, ASSIGNED, STARTED, COMPLETED, CANCELLED
+    PENDING,
+    ACCEPTED,
+    IN_PROGRESS,
+    COMPLETED,
+    CANCELLED
 }

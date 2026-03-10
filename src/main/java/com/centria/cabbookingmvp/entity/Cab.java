@@ -2,6 +2,7 @@ package com.centria.cabbookingmvp.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
@@ -38,8 +39,16 @@ public class Cab {
     @Column(nullable = false, length = 16)
     private CabType cabType = CabType.SEDAN;
 
+    @NotNull
+    @Column(nullable = false)
+    private Long driverId;
+
     @Column(nullable = false)
     private boolean active = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private CabStatus status = CabStatus.OFFLINE;
 
     public Cab() {}
 
@@ -61,6 +70,13 @@ public class Cab {
     public CabType getCabType() { return cabType; }
     public void setCabType(CabType cabType) { this.cabType = cabType; }
 
+    public Long getDriverId() { return driverId; }
+    public void setDriverId(Long driverId) { this.driverId = driverId; }
+
     public boolean isActive() { return active; }
+
     public void setActive(boolean active) { this.active = active; }
+
+    public CabStatus getStatus() { return status; }
+    public void setStatus(CabStatus status) { this.status = status; }
 }
