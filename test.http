@@ -1,0 +1,46 @@
+### login
+POST http://localhost:8081/api/login
+Content-Type: application/json
+
+{
+  "identifier": "driver@test.com",
+  "password": "123456"
+}
+
+###
+
+### create trip
+POST http://localhost:8081/api/trips
+Content-Type: application/json
+
+{
+  "riderId": 2,
+  "pickupLocation": "Mall",
+  "dropoffLocation": "Campus"
+}
+
+###
+
+### accept trip
+PUT http://localhost:8081/api/trips/22/accept
+Content-Type: application/json
+
+{
+  "driverId": 6,
+  "cabId": 6
+}
+
+###
+
+### start trip
+PUT http://localhost:8081/api/trips/22/start
+
+###
+
+### complete trip
+PUT http://localhost:8081/api/trips/22/complete
+
+###
+
+### cancel trip
+PUT http://localhost:8081/api/trips/24/cancel?userId=2

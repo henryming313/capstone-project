@@ -1,0 +1,50 @@
+### 1. create trip
+POST http://localhost:8081/api/trips
+Content-Type: application/json
+
+{
+  "riderId": 2,
+  "pickupLocation": "Helsinki Railway Station",
+  "dropoffLocation": "Centria Campus"
+}
+
+###
+
+### 2. accept trip
+PUT http://localhost:8081/api/trips/9/accept
+Content-Type: application/json
+
+{
+  "driverId": 1,
+  "cabId": 1
+}
+
+###
+
+### 3. start trip
+PUT http://localhost:8081/api/trips/9/start
+
+###
+
+### 4. complete trip
+PUT http://localhost:8081/api/trips/9/complete
+
+###
+
+### 5. cancel trip (should fail if trip already completed)
+PUT http://localhost:8081/api/trips/9/cancel
+
+###
+
+### 6. get passenger trips
+GET http://localhost:8081/api/trips/passenger/2
+
+###
+
+### 7. get driver trips
+GET http://localhost:8081/api/trips/driver/1
+
+###
+
+### 8. get trips by status
+GET http://localhost:8081/api/trips/status/PENDING

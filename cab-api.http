@@ -1,0 +1,45 @@
+### 1. add cab
+POST http://localhost:8081/api/cabs
+Content-Type: application/json
+
+{
+  "plateNumber": "XYZ-1000",
+  "brand": "Toyota",
+  "model": "Prius",
+  "color": "Red",
+  "cabType": "SEDAN",
+  "driverId": 2
+}
+
+###
+
+### 2. update cab
+PUT http://localhost:8081/api/cabs/1
+Content-Type: application/json
+
+{
+  "brand": "Toyota",
+  "model": "Corolla",
+  "color": "Red",
+  "cabType": "SUV"
+}
+
+###
+
+### 3. update status ONLINE
+PUT http://localhost:8081/api/cabs/1/status
+Content-Type: application/json
+
+{
+  "status": "ONLINE"
+}
+
+###
+
+### 4. get cabs by driver
+GET http://localhost:8081/api/cabs/driver/2
+
+###
+
+### 5. get cabs by status
+GET http://localhost:8081/api/cabs/status/ONLINE
