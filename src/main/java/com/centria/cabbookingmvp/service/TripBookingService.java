@@ -28,10 +28,13 @@ public class TripBookingService {
         this.cabRepo = cabRepo;
     }
 
-    // 1. 创建订单
+    // 1. 
     public TripBooking createTrip(CreateTripRequest req) {
         User rider = userRepo.findById(req.getRiderId())
                 .orElseThrow(() -> new RuntimeException("Rider not found"));
+        if (!"RIDER".equals(rider.getRole())) {
+            throw new RuntimeException("Only rider can create trip");
+        }
 
         TripBooking trip = new TripBooking();
         trip.setRider(rider);
@@ -42,20 +45,27 @@ public class TripBookingService {
         return tripRepo.save(trip);
     }
 
-    // 2. 司机接单
+    // 2. 
     public TripBooking acceptTrip(Long tripId, AcceptTripRequest req) {
         TripBooking trip = tripRepo.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
+        User driver = userRepo.findById(req.getDriverId())
+                .orElseThrow(() -> new RuntimeException("Driver not found"));
+
 
         if (trip.getStatus() != TripStatus.PENDING) {
             throw new RuntimeException("Only PENDING trip can be accepted");
         }
-
-        User driver = userRepo.findById(req.getDriverId())
-                .orElseThrow(() -> new RuntimeException("Driver not found"));
+        if (!"DRIVER".equals(driver.getRole())) {
+            throw new RuntimeException("Only driver can accept trip");
+        }
 
         Cab cab = cabRepo.findById(req.getCabId())
                 .orElseThrow(() -> new RuntimeException("Cab not found"));
+        if (!req.getDriverId().equals(cab.getDriverId())) {
+            throw new RuntimeException("Cab does not belong to driver");
+        }
+
 
         trip.setDriver(driver);
         trip.setCab(cab);
@@ -64,7 +74,7 @@ public class TripBookingService {
         return tripRepo.save(trip);
     }
 
-    // 3. 开始行程
+    // 3. 
     public TripBooking startTrip(Long tripId) {
         TripBooking trip = tripRepo.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
@@ -77,7 +87,7 @@ public class TripBookingService {
         return tripRepo.save(trip);
     }
 
-    // 4. 完成行程
+    // 4. 
     public TripBooking completeTrip(Long tripId) {
         TripBooking trip = tripRepo.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
@@ -90,30 +100,33 @@ public class TripBookingService {
         return tripRepo.save(trip);
     }
 
-    // 5. 取消订单
-    public TripBooking cancelTrip(Long tripId) {
+    public TripBooking cancelTrip(Long tripId, Long userId) {
         TripBooking trip = tripRepo.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
 
-        if (trip.getStatus() == TripStatus.COMPLETED) {
-            throw new RuntimeException("Completed trip cannot be cancelled");
+        if (trip.getStatus() != TripStatus.PENDING && trip.getStatus() != TripStatus.ACCEPTED) {
+            throw new RuntimeException("Trip cannot be cancelled");
+        }
+
+        if (trip.getRider() == null || !trip.getRider().getId().equals(userId)) {
+            throw new RuntimeException("Only rider can cancel trip");
         }
 
         trip.setStatus(TripStatus.CANCELLED);
         return tripRepo.save(trip);
     }
 
-    // 6. 乘客查自己的订单
+    // 6. 
     public List<TripBooking> getTripsByPassenger(Long riderId) {
         return tripRepo.findByRider_Id(riderId);
     }
-
-    // 7. 司机查自己的订单
+    
+    // 7. 
     public List<TripBooking> getTripsByDriver(Long driverId) {
         return tripRepo.findByDriver_Id(driverId);
     }
-
-    // 8. 按状态查订单
+    
+    // 8. 
     public List<TripBooking> getTripsByStatus(String statusText) {
         TripStatus status;
         try {
