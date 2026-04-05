@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Driver Dashboard - CabBooking</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">Driver Dashboard</div>
+    <div class="nav-links">
+      <a href="vehicle-management.html">Vehicle Management</a>
+      <button class="link-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="card grid-2">
+    <div>
+      <h3 style="margin-top:0;">Driver Context</h3>
+      <label for="driver-id">Driver ID</label>
+      <input id="driver-id" type="number" min="1" />
+      <label for="cab-id">Cab ID</label>
+      <input id="cab-id" type="number" min="1" />
+      <button id="save-driver-context" class="secondary">Save Context</button>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">Quick Actions</h3>
+      <div class="actions">
+        <button id="refresh-pending">Refresh Pending Trips</button>
+        <button id="refresh-my-trips" class="secondary">Refresh My Trips</button>
+      </div>
+      <p class="note" style="margin-top:10px;">Accept requires both Driver ID and Cab ID.</p>
+      <p id="driver-msg" class="message"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Pending Trips (for Accept)</h3>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+        <tr>
+          <th>Trip ID</th>
+          <th>Pickup</th>
+          <th>Dropoff</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="pending-trips-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">My Trips (Start / Complete)</h3>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+        <tr>
+          <th>Trip ID</th>
+          <th>Pickup</th>
+          <th>Dropoff</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="driver-trips-body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="js/axios.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/driver-dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Management - CabBooking</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">Vehicle Management</div>
+    <div class="nav-links">
+      <a href="driver-dashboard.html">Driver Dashboard</a>
+      <button class="link-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="card grid-2">
+    <div>
+      <h3 style="margin-top:0;">Add Vehicle</h3>
+      <label for="driver-id">Driver ID</label>
+      <input id="driver-id" type="number" min="1" />
+
+      <label for="brand">Brand</label>
+      <input id="brand" placeholder="Toyota" />
+
+      <label for="model">Model</label>
+      <input id="model" placeholder="Corolla" />
+
+      <label for="color">Color</label>
+      <input id="color" placeholder="White" />
+
+      <label for="plate-number">Plate Number</label>
+      <input id="plate-number" placeholder="FIN-775" />
+
+      <label for="cab-type">Cab Type</label>
+      <select id="cab-type">
+        <option value="SEDAN">SEDAN</option>
+        <option value="SUV">SUV</option>
+        <option value="VAN">VAN</option>
+      </select>
+
+      <button id="add-cab-btn">Add Cab</button>
+      <p id="cab-msg" class="message"></p>
+    </div>
+
+    <div>
+      <h3 style="margin-top:0;">Driver Vehicles</h3>
+      <button id="load-cabs-btn" class="secondary" style="margin-bottom:10px;">Load My Cabs</button>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+          <tr>
+            <th>Cab ID</th>
+            <th>Plate</th>
+            <th>Brand</th>
+            <th>Model</th>
+            <th>Status</th>
+          </tr>
+          </thead>
+          <tbody id="cabs-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/axios.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/vehicle-management.js"></script>
+</body>
+</html>

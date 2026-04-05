@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip Page - CabBooking</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">Trip Page (Passenger)</div>
+    <div class="nav-links">
+      <a href="passenger-dashboard.html">Passenger Dashboard</a>
+      <button class="link-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="card grid-2">
+    <div>
+      <h3 style="margin-top:0;">Create Trip</h3>
+      <label for="rider-id">Rider ID</label>
+      <input id="rider-id" type="number" min="1" />
+
+      <label for="pickup-location">Pickup Location</label>
+      <select id="pickup-location"></select>
+
+      <label for="dropoff-location">Dropoff Location</label>
+      <select id="dropoff-location"></select>
+
+      <button id="create-trip-btn">Submit Trip</button>
+      <p class="note">Backend receives only location names, not coordinates.</p>
+      <p id="trip-msg" class="message"></p>
+    </div>
+
+    <div>
+      <h3 style="margin-top:0;">Kokkola Map (Leaflet + OSM)</h3>
+      <div id="trip-map"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+      <h3 style="margin:0;">My Trips</h3>
+      <button id="refresh-trip-list" class="secondary">Refresh List</button>
+    </div>
+    <div style="overflow-x:auto;margin-top:10px;">
+      <table>
+        <thead>
+        <tr>
+          <th>Trip ID</th>
+          <th>Pickup</th>
+          <th>Dropoff</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="trip-list-body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="js/axios.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/trip.js"></script>
+</body>
+</html>

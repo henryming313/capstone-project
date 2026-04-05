@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - CabBooking</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">CabBooking MVP</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="register.html">Register</a>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="card" style="max-width:520px;margin-inline:auto;">
+    <h2 class="page-title">Login</h2>
+    <label for="identifier">Email or Phone</label>
+    <input id="identifier" placeholder="alice@test.com" />
+
+    <label for="password">Password</label>
+    <input id="password" type="password" placeholder="******" />
+
+    <button id="login-btn">Login</button>
+    <p id="login-msg" class="message"></p>
+  </div>
+</main>
+
+<script src="js/axios.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>
