@@ -44,8 +44,9 @@ public class TripBookingController {
     }
 
     @PutMapping("/{id}/cancel")
-    public ApiResponse<?> cancelTrip(@PathVariable Long id) {
-        TripBooking trip = tripService.cancelTrip(id);
+    public ApiResponse<?> cancelTrip(@PathVariable Long id,
+                                     @RequestParam Long userId) {
+        TripBooking trip = tripService.cancelTrip(id,userId);
         return ApiResponse.success(trip);
     }
 

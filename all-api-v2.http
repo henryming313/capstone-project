@@ -1,0 +1,93 @@
+@baseUrl = http://localhost:8081
+@json = application/json
+
+########################################################
+### 0) Login (Driver)
+POST {{baseUrl}}/api/login
+Content-Type: {{json}}
+
+{
+  "identifier": "driver@test.com",
+  "password": "123456"
+}
+
+########################################################
+### 1) Fare estimate (mock)
+POST {{baseUrl}}/api/fare/estimate
+Content-Type: {{json}}
+
+{
+  "pickupLocation": "Centria University",
+  "dropoffLocation": "Kokkola Railway Station"
+}
+
+########################################################
+### 2) Add cab (make sure driverId is a DRIVER, e.g. 6)
+POST {{baseUrl}}/api/cabs
+Content-Type: {{json}}
+
+{
+"plateNumber": "XYZ-2026",
+  "brand": "Toyota",
+  "model": "Prius",
+  "color": "Blue",
+  "cabType": "SEDAN",
+  "driverId": 6
+}
+
+########################################################
+### 3) Create trip (Passenger creates -> PENDING)
+POST {{baseUrl}}/api/trips
+Content-Type: {{json}}
+
+{
+  "riderId": 2,
+  "pickupLocation": "City Center",
+  "dropoffLocation": "Centria University"
+}
+
+########################################################
+### 4) List PENDING trips (find a tripId)
+GET {{baseUrl}}/api/trips/status/PENDING
+
+########################################################
+### 5) Accept trip (replace 33 with real tripId, cabId with real cab id)
+PUT {{baseUrl}}/api/trips/37/accept
+Content-Type: {{json}}
+
+{
+  "driverId": 6,
+  "cabId": 7
+}
+
+########################################################
+### 6) Start trip (replace tripId)
+PUT {{baseUrl}}/api/trips/37/start
+
+########################################################
+### 7) Complete trip (replace tripId)
+PUT {{baseUrl}}/api/trips/37/complete
+
+########################################################
+### 8) Rating (trip must be COMPLETED)
+POST {{baseUrl}}/api/ratings
+Content-Type: {{json}}
+
+{
+  "tripId": 37,
+  "riderId": 2,
+  "score": 5,
+  "comment": "Great ride!"
+}
+
+########################################################
+### 9) Query rating by trip
+GET {{baseUrl}}/api/ratings/trip/37
+
+########################################################
+### 10) List ratings by driver
+GET {{baseUrl}}/api/ratings/driver/6
+
+########################################################
+### 11) Admin: list users (replace adminId)
+GET {{baseUrl}}/api/admin/users?adminId=8

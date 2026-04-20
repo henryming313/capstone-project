@@ -43,3 +43,15 @@ GET http://localhost:8081/api/cabs/driver/2
 
 ### 5. get cabs by status
 GET http://localhost:8081/api/cabs/status/ONLINE
+
+### 1) list users
+GET http://localhost:8081/api/admin/users?adminId=8
+
+### 2) list trips (optional)
+GET http://localhost:8081/api/admin/trips?adminId=8&status=PENDING
+
+### 3) ban a user (example userId=6)
+PUT http://localhost:8081/api/admin/users/6/status?adminId=8&status=BANNED
+
+### 4) unban (set ACTIVE)
+PUT http://localhost:8081/api/admin/users/6/status?adminId=8&status=ACTIVE

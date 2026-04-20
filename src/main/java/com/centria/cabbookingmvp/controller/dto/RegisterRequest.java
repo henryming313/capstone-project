@@ -23,6 +23,9 @@ public class RegisterRequest {
     @Size(max = 255)
     private String password;
 
+    @Size(max = 16)
+    private String role;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -34,4 +37,7 @@ public class RegisterRequest {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }

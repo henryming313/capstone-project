@@ -10,6 +10,7 @@ import com.centria.cabbookingmvp.repository.CabRepository;
 import com.centria.cabbookingmvp.repository.TripBookingRepository;
 import com.centria.cabbookingmvp.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import com.centria.cabbookingmvp.service.FareEstimateService;
 
 import java.util.List;
 
@@ -19,13 +20,16 @@ public class TripBookingService {
     private final TripBookingRepository tripRepo;
     private final UserRepository userRepo;
     private final CabRepository cabRepo;
+    private final FareEstimateService fareService;
 
     public TripBookingService(TripBookingRepository tripRepo,
                               UserRepository userRepo,
-                              CabRepository cabRepo) {
+                              CabRepository cabRepo,
+                              FareEstimateService fareService) {
         this.tripRepo = tripRepo;
         this.userRepo = userRepo;
         this.cabRepo = cabRepo;
+        this.fareService = fareService;
     }
 
     // 1. 
@@ -87,7 +91,6 @@ public class TripBookingService {
         return tripRepo.save(trip);
     }
 
-    // 4. 
     public TripBooking completeTrip(Long tripId) {
         TripBooking trip = tripRepo.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
@@ -96,7 +99,16 @@ public class TripBookingService {
             throw new RuntimeException("Only IN_PROGRESS trip can be completed");
         }
 
+        //  calculate prize
+        var estimate = fareService.estimate(
+                trip.getPickupLocation(),
+                trip.getDropoffLocation()
+        );
+
+        trip.setTotalFare(estimate.getEstimatedTotal());
+
         trip.setStatus(TripStatus.COMPLETED);
+
         return tripRepo.save(trip);
     }
 

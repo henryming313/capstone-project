@@ -31,6 +31,7 @@ public class UserController {
 
 
         u.setPasswordHash(req.getPassword());
+        u.setRole(req.getRole());
 
         User saved = userService.register(u);
 
@@ -40,6 +41,7 @@ public class UserController {
                 "name", saved.getName(),
                 "email", saved.getEmail(),
                 "phone", saved.getPhone(),
+                "role", saved.getRole(),
                 "status", saved.getStatus().name()
         ));
     }
@@ -54,7 +56,7 @@ public class UserController {
                 "id", user.getId(),
                 "name", user.getName(),
                 "email", user.getEmail(),
-                "phone", user.getPhone),
+                "phone", user.getPhone(),
                 "role", user.getRole()
 
         ));

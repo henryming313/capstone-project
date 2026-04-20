@@ -27,6 +27,7 @@ function renderPendingTrips(trips) {
         <td>${statusBadge(trip.status)}</td>
         <td>
           <button onclick="acceptTrip(${trip.id})">Accept</button>
+          <button class="danger" onclick="rejectTrip(${trip.id})">Reject</button>
         </td>
       </tr>
     `).join("")
@@ -59,14 +60,35 @@ function renderDriverTrips(trips) {
 }
 
 async function loadPendingTrips() {
+  const { driverId } = getDriverContext();
+  if (!driverId) {
+    setMessage("driver-msg", "Please set Driver ID first.", "error");
+    return;
+  }
   try {
     setMessage("driver-msg", "Loading pending trips...", "");
-    const response = await apiRequest("get", "/trips/status/PENDING");
+    const response = await apiRequest("get", `/trips/pending?driverId=${driverId}`);
     const trips = unwrapData(response) || [];
     renderPendingTrips(trips);
     setMessage("driver-msg", `Loaded ${trips.length} pending trips.`, "success");
   } catch (error) {
     setMessage("driver-msg", error.message || "Failed loading pending trips", "error");
+  }
+}
+
+async function rejectTrip(tripId) {
+  const { driverId } = getDriverContext();
+  if (!driverId) {
+    setMessage("driver-msg", "Please set Driver ID first.", "error");
+    return;
+  }
+  try {
+    const response = await apiRequest("put", `/trips/${tripId}/reject?driverId=${driverId}`);
+    unwrapData(response);
+    setMessage("driver-msg", `Trip ${tripId} rejected.`, "success");
+    loadPendingTrips();
+  } catch (error) {
+    setMessage("driver-msg", error.message || "Reject failed", "error");
   }
 }
 

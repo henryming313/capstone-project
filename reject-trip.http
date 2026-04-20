@@ -1,0 +1,31 @@
+### ========== 0) Base ==========
+@baseUrl = http://localhost:8081
+@riderId = 2
+@driverId = 6
+@cabId = 7
+
+### ========== 1) Create a PENDING trip ==========
+POST {{baseUrl}}/api/trips
+Content-Type: application/json
+
+{
+  "riderId": {{riderId}},
+  "pickupLocation": "City Center",
+  "dropoffLocation": "Centria University"
+}
+
+### ✅ 运行后看 Response 里的 data.id，就是 tripId
+### 把 tripId 记下来，比如 33
+
+### ========== 2) List pending trips for this driver (excluding rejected) ==========
+GET {{baseUrl}}/api/trips/pending?driverId={{driverId}}
+
+### ========== 3) Reject a trip ==========
+### 把 33 改成你刚创建出来的 tripId
+PUT {{baseUrl}}/api/trips/38/reject?driverId={{driverId}}
+
+### ========== 4) List pending again (trip should disappear for this driver) ==========
+GET {{baseUrl}}/api/trips/pending?driverId={{driverId}}
+
+### (Optional) Check global pending list (trip still PENDING in system)
+GET {{baseUrl}}/api/trips/status/PENDING

@@ -45,7 +45,7 @@ public class DevDataRunner {
             trip.setCab(cab);          // cab 也已保存
             trip.setPickupLocation("Helsinki Central Station");
             trip.setDropoffLocation("Centria Campus");
-            trip.setStatus(TripStatus.REQUESTED);
+            trip.setStatus(TripStatus.PENDING);
             trip.setTotalFare(new BigDecimal("18.50"));
 
             tripRepo.save(trip);

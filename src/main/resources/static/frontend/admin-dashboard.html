@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - CabBooking</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">Admin Dashboard</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <button class="link-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <!-- Admin ID -->
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <label for="admin-id" style="margin:0;white-space:nowrap;">Admin ID</label>
+      <input id="admin-id" type="number" min="1" style="width:120px;margin:0;" />
+    </div>
+  </div>
+
+  <!-- Users Section -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+      <h3 style="margin:0;">Users</h3>
+      <button id="refresh-users-btn" class="secondary">Refresh Users</button>
+    </div>
+    <div style="overflow-x:auto;margin-top:10px;">
+      <table>
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="users-body"></tbody>
+      </table>
+    </div>
+    <p id="users-msg" class="message"></p>
+  </div>
+
+  <!-- Trips Section -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+      <h3 style="margin:0;">Trips</h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="trip-status-filter" style="width:auto;margin:0;">
+          <option value="">All</option>
+          <option value="PENDING">PENDING</option>
+          <option value="ACCEPTED">ACCEPTED</option>
+          <option value="IN_PROGRESS">IN_PROGRESS</option>
+          <option value="COMPLETED">COMPLETED</option>
+          <option value="CANCELLED">CANCELLED</option>
+        </select>
+        <button id="refresh-trips-btn" class="secondary">Refresh Trips</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;margin-top:10px;">
+      <table>
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Rider</th>
+          <th>Driver</th>
+          <th>Cab</th>
+          <th>Pickup</th>
+          <th>Dropoff</th>
+          <th>Status</th>
+          <th>Fare</th>
+        </tr>
+        </thead>
+        <tbody id="trips-body"></tbody>
+      </table>
+    </div>
+    <p id="trips-msg" class="message"></p>
+  </div>
+
+  <!-- Assign Trip Section -->
+  <div class="card">
+    <h3 style="margin-top:0;">Assign Trip</h3>
+    <div class="grid-3">
+      <div>
+        <label for="assign-trip-id">Trip ID</label>
+        <input id="assign-trip-id" type="number" min="1" />
+      </div>
+      <div>
+        <label for="assign-driver-id">Driver ID</label>
+        <input id="assign-driver-id" type="number" min="1" />
+      </div>
+      <div>
+        <label for="assign-cab-id">Cab ID</label>
+        <input id="assign-cab-id" type="number" min="1" />
+      </div>
+    </div>
+    <button id="assign-trip-btn">Assign</button>
+    <p id="assign-msg" class="message"></p>
+  </div>
+</main>
+
+<script src="js/axios.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/admin-dashboard.js"></script>
+</body>
+</html>

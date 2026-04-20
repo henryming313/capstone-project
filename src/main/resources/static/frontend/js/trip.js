@@ -115,6 +115,38 @@ function updateMarkers() {
   }
 }
 
+async function estimateFare() {
+  const pickupLocation = pickupSelect.value;
+  const dropoffLocation = dropoffSelect.value;
+  const resultDiv = document.getElementById("fare-estimate-result");
+
+  if (!pickupLocation || !dropoffLocation) {
+    setMessage("trip-msg", "Please choose both pickup and dropoff locations.", "error");
+    return;
+  }
+  if (pickupLocation === dropoffLocation) {
+    setMessage("trip-msg", "Pickup and dropoff should be different.", "error");
+    return;
+  }
+
+  try {
+    setMessage("trip-msg", "Estimating fare...", "");
+    const response = await apiRequest("post", "/fare/estimate", {
+      pickupLocation,
+      dropoffLocation
+    });
+    const fare = unwrapData(response);
+    resultDiv.style.display = "block";
+    resultDiv.innerHTML =
+      "<strong>Fare Estimate:</strong> Base " + fare.baseFare + " + Route " + fare.routeFare +
+      " = <strong>" + fare.estimatedTotal + " " + fare.currency + "</strong>";
+    setMessage("trip-msg", "Fare estimated successfully.", "success");
+  } catch (error) {
+    resultDiv.style.display = "none";
+    setMessage("trip-msg", error.message || "Fare estimate failed", "error");
+  }
+}
+
 async function createTrip() {
   const riderId = Number(riderIdInput.value);
   const pickupLocation = pickupSelect.value;
@@ -198,6 +230,7 @@ async function cancelTripFromList(tripId) {
 
 pickupSelect.addEventListener("change", updateMarkers);
 dropoffSelect.addEventListener("change", updateMarkers);
+document.getElementById("estimate-fare-btn").addEventListener("click", estimateFare);
 document.getElementById("create-trip-btn").addEventListener("click", createTrip);
 document.getElementById("refresh-trip-list").addEventListener("click", loadPassengerTrips);
 

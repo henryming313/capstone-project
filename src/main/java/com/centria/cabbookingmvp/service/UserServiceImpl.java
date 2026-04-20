@@ -35,6 +35,17 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Phone already exists");
         }
 
+        // role
+        if (user.getRole() == null || user.getRole().isBlank()) {
+            user.setRole("RIDER"); //
+        } else {
+            String role = user.getRole().toUpperCase();
+            if (!role.equals("RIDER") && !role.equals("DRIVER") && !role.equals("ADMIN")) {
+                throw new IllegalArgumentException("Invalid role");
+            }
+            user.setRole(role);
+        }
+
         //
         if (user.getStatus() == null) {
             user.setStatus(UserStatus.ACTIVE);
@@ -65,6 +76,11 @@ public class UserServiceImpl implements UserService {
         if (!password.equals(user.getPasswordHash())) {
             throw new IllegalArgumentException("Invalid password");
         }
+        // banned
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new IllegalArgumentException("Account is banned");
+        }
+
 
         return user;
     }

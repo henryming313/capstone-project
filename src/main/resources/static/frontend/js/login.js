@@ -27,7 +27,13 @@ document.getElementById("login-btn").addEventListener("click", async () => {
     setCurrentMode(role);
 
     setMessage("login-msg", "Login success. Redirecting...", "success");
-    window.location.href = role === "DRIVER" ? "driver-dashboard.html" : "passenger-dashboard.html";
+    if (role === "ADMIN") {
+      window.location.href = "admin-dashboard.html";
+    } else if (role === "DRIVER") {
+      window.location.href = "driver-dashboard.html";
+    } else {
+      window.location.href = "passenger-dashboard.html";
+    }
   } catch (error) {
     setMessage("login-msg", error.message || "Login failed", "error");
   }

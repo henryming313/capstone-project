@@ -221,6 +221,18 @@ th {
   background: #ba2020;
 }
 
+.badge.ACTIVE {
+  background: #168046;
+}
+
+.badge.BANNED {
+  background: #ba2020;
+}
+
+.badge.DELETED {
+  background: #7d8796;
+}
+
 #trip-map {
   width: 100%;
   min-height: 380px;
