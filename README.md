@@ -76,6 +76,26 @@ This project provides a digital cab booking platform to address these issues.
 ### Database
 
 * MySQL 8.0
+* ## Database Setup
+
+1. Install MySQL 8+
+2. Create database:
+
+CREATE DATABASE cabbooking_mvp;
+
+3. Import the provided SQL file:
+
+mysql -u root -p cabbooking_mvp < db/cabbooking_mvp.sql
+
+4. Update application.properties:
+
+spring.datasource.url=jdbc:mysql://localhost:3306/cabbooking_mvp
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+
+5. Run the project:
+
+./mvnw spring-boot:run
 
 ---
 
