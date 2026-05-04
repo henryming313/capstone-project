@@ -216,6 +216,78 @@ Relationships:
 * One Driver → Many Trips
 * One Driver → One or More Cabs
 * One Trip → One Rating
+### 🗄 Database Schema Details
+
+### 1. users Table (User Table)
+| Column Name | Data Type | PK/FK | Description | Constraints |
+| --- | --- | --- | --- | --- |
+| id | BIGINT | PK | Unique user ID | AUTO_INCREMENT |
+| username | VARCHAR(50) | - | Username | NOT NULL, UNIQUE |
+| password | VARCHAR(100) | - | Encrypted password | NOT NULL |
+| role | VARCHAR(20) | - | Role (RIDER / DRIVER / ADMIN) | NOT NULL |
+| status | VARCHAR(20) | - | Account status (ACTIVE / BANNED) | DEFAULT 'ACTIVE' |
+| phone | VARCHAR(20) | - | Phone number | UNIQUE |
+| created_at | TIMESTAMP | - | Creation time | DEFAULT CURRENT_TIMESTAMP |
+
+---
+
+### 2. cabs Table (Cab Table)
+| Column Name | Data Type | PK/FK | Description | Constraints |
+| --- | --- | --- | --- | --- |
+| id | BIGINT | PK | Unique cab ID | AUTO_INCREMENT |
+| license_plate | VARCHAR(20) | - | License plate number | NOT NULL, UNIQUE |
+| model | VARCHAR(50) | - | Vehicle model | NOT NULL |
+| status | VARCHAR(20) | - | Cab status (AVAILABLE / BUSY) | DEFAULT 'AVAILABLE' |
+
+---
+
+### 3. trip_bookings Table (Trip Booking Table)
+| Column Name | Data Type | PK/FK | Description | Constraints |
+| --- | --- | --- | --- | --- |
+| id | BIGINT | PK | Unique trip ID | AUTO_INCREMENT |
+| rider_id | BIGINT | FK | Rider ID (references users.id) | NOT NULL |
+| driver_id | BIGINT | FK | Driver ID (references users.id) | NULL (pending assignment) |
+| cab_id | BIGINT | FK | Cab ID (references cabs.id) | NULL (pending assignment) |
+| status | VARCHAR(20) | - | Trip status (PENDING / ACCEPTED / IN_PROGRESS / COMPLETED / CANCELLED) | NOT NULL |
+| start_location | VARCHAR(100) | - | Trip start location | NOT NULL |
+| end_location | VARCHAR(100) | - | Trip destination | NOT NULL |
+| fare | DECIMAL(10,2) | - | Calculated trip fare | NULL (filled on completion) |
+| created_at | TIMESTAMP | - | Booking creation time | DEFAULT CURRENT_TIMESTAMP |
+| completed_at | TIMESTAMP | - | Trip completion time | NULL |
+
+---
+
+### 4. ratings Table (Rating Table)
+| Column Name | Data Type | PK/FK | Description | Constraints |
+| --- | --- | --- | --- | --- |
+| id | BIGINT | PK | Unique rating ID | AUTO_INCREMENT |
+| trip_id | BIGINT | FK | Trip ID (references trip_bookings.id) | NOT NULL |
+| rider_id | BIGINT | FK | Rider ID (references users.id) | NOT NULL |
+| driver_id | BIGINT | FK | Driver ID (references users.id) | NOT NULL |
+| score | INT | - | Rating score (1–5) | NOT NULL |
+| comment | VARCHAR(255) | - | Optional comment | NULL |
+| created_at | TIMESTAMP | - | Rating time | DEFAULT CURRENT_TIMESTAMP |
+
+---
+
+### 5. driver_cab_assignment Table (Driver-Cab Assignment)
+| Column Name | Data Type | PK/FK | Description | Constraints |
+| --- | --- | --- | --- | --- |
+| id | BIGINT | PK | Unique assignment ID | AUTO_INCREMENT |
+| driver_id | BIGINT | FK | Driver ID (references users.id) | NOT NULL |
+| cab_id | BIGINT | FK | Cab ID (references cabs.id) | NOT NULL |
+| assigned_at | TIMESTAMP | - | Assignment time | DEFAULT CURRENT_TIMESTAMP |
+
+---
+
+### 6. trip_rejections Table (Trip Rejection Table)
+| Column Name | Data Type | PK/FK | Description | Constraints |
+| --- | --- | --- | --- | --- |
+| id | BIGINT | PK | Unique rejection ID | AUTO_INCREMENT |
+| trip_id | BIGINT | FK | Trip ID (references trip_bookings.id) | NOT NULL |
+| driver_id | BIGINT | FK | Driver ID (references users.id) | NOT NULL |
+| rejected_at | TIMESTAMP | - | Rejection time | DEFAULT CURRENT_TIMESTAMP |
+| reason | VARCHAR(255) | - | Reason for rejection | NULL |
 
 ---
 
